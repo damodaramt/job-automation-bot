@@ -1,4 +1,5 @@
 #!/bin/bash
-
 cd ~/projects/automation-system
-node services/whatsapp.js
+pm2 resurrect
+pm2 logs job-bot
+

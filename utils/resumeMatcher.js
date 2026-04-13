@@ -8,39 +8,43 @@ function matchScore(text) {
     if (!text) return 0;
 
     text = normalize(text);
-
     let score = 0;
 
-    if (text.includes("ai engineer")) score += 40;
-    else if (text.includes("machine learning engineer")) score += 40;
-    else if (text.includes("ml engineer")) score += 35;
+    // 🎯 Role matching
+    if (text.includes("ai engineer")) score += 50;
+    else if (text.includes("machine learning engineer")) score += 45;
+    else if (text.includes("ml engineer")) score += 40;
+    else if (text.includes("data scientist")) score += 35;
 
-    if (text.includes("ai")) score += 15;
-    if (text.includes("machine learning")) score += 20;
+    // 🧠 Core AI keywords
+    if (text.includes("ai")) score += 10;
+    if (text.includes("machine learning")) score += 15;
+    if (text.includes("llm")) score += 20;
+    if (text.includes("rag")) score += 20;
 
-    resume.skills.forEach(s => {
-        if (text.includes(normalize(s))) score += 5;
+    // 🛠 Resume skills
+    resume.skills.forEach(skill => {
+        if (text.includes(normalize(skill))) score += 5;
     });
 
+    // 🚀 Priority keywords
     resume.priority_keywords.forEach(k => {
         if (text.includes(normalize(k))) score += 10;
     });
 
+    // ❌ Ignore keywords
     resume.ignore_keywords.forEach(k => {
-        if (text.includes(normalize(k))) score -= 40;
+        if (text.includes(normalize(k))) score -= 50;
     });
 
-    if (score < 0) score = 0;
-    if (score > 100) score = 100;
-
-    return score;
+    return Math.max(0, Math.min(score, 100));
 }
 
 function getPriority(score) {
-    if (score >= 70) return "APPLY_NOW";
-    if (score >= 50) return "HIGH";
-    if (score >= 30) return "MEDIUM";
-    return "IGNORE";
+    if (score >= 75) return "🔥 APPLY_NOW";
+    if (score >= 60) return "⚡ HIGH";
+    if (score >= 40) return "📊 MEDIUM";
+    return "❌ IGNORE";
 }
 
 module.exports = { matchScore, getPriority };

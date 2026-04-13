@@ -1,21 +1,30 @@
 const imaps = require("imap-simple");
 const config = require("../config/imap.config");
-const { send } = require("./whatsapp.service");
+const { sendMessage } = require("./whatsapp.service");
+const { matchScore, getPriority } = require("../utils/resumeMatcher");
 
-// ===== MEMORY DEDUP (NO DB NEEDED) =====
+// ===== MEMORY DEDUP =====
 const processed = new Set();
 
-// ===== LINK =====
+// ===== CLEAN LINK EXTRACTOR =====
 function getLink(body) {
-  const match = body.match(/https?:\/\/[^\s>]+/);
-  return match ? match[0] : "No link";
+  const links = body.match(/https?:\/\/[^\s>"]+/g) || [];
+
+  const valid = links.filter(link =>
+    !link.includes("linkedin.com/comm") &&
+    !link.includes("linkedin.com/feed") &&
+    !link.includes("w3.org") &&
+    !link.includes("example.com") &&
+    !link.includes("unsubscribe")
+  );
+
+  return valid[0] || "No valid job link";
 }
 
 // ===== FILTER =====
 function isJob(subject) {
   const s = subject.toLowerCase();
 
-  // ❌ remove bulk emails
   const blocked = [
     "apply to jobs",
     "recommended",
@@ -29,7 +38,6 @@ function isJob(subject) {
 
   if (blocked.some(b => s.includes(b))) return false;
 
-  // ✅ allow AI/ML roles
   return (
     s.includes("ai") ||
     s.includes("ml") ||
@@ -39,54 +47,25 @@ function isJob(subject) {
   );
 }
 
-// ===== SCORE =====
-function score(text) {
-  text = text.toLowerCase();
-
-  let s = 0;
-
-  if (text.includes("ai engineer")) s += 50;
-  if (text.includes("machine learning")) s += 40;
-  if (text.includes("ml engineer")) s += 40;
-  if (text.includes("data scientist")) s += 35;
-  if (text.includes("llm")) s += 30;
-  if (text.includes("rag")) s += 30;
-
-  if (text.includes("python")) s += 10;
-  if (text.includes("backend")) s += 10;
-
-  return Math.min(s, 100);
-}
-
-// ===== PRIORITY =====
-function getPriority(score) {
-  if (score >= 80) return "🔥 HIGH";
-  if (score >= 60) return "⚡ MEDIUM";
-  return "LOW";
-}
-
 // ===== MAIN =====
 async function checkEmails() {
   let conn;
 
   try {
     conn = await imaps.connect(config);
-
-    // ✅ ALWAYS USE INBOX (IMPORTANT FIX)
     await conn.openBox("INBOX");
 
-    // ✅ USE ALL (NOT UNSEEN)
-    const emails = await conn.search(["ALL"], {
+    const emails = await conn.search(["UNSEEN"], {
       bodies: ["HEADER.FIELDS (FROM SUBJECT)", "TEXT"],
-      markSeen: false
+      markSeen: true
     });
 
     if (!emails.length) {
-      console.log("📭 No emails found");
+      console.log("📭 No new emails");
       return;
     }
 
-    console.log("📁 Total emails:", emails.length);
+    console.log("📩 New emails:", emails.length);
 
     for (let item of emails) {
       try {
@@ -99,15 +78,12 @@ async function checkEmails() {
         const uniqueId = subject + from;
 
         // ✅ DEDUP
-        if (processed.has(uniqueId)) {
-          continue;
-        }
-
+        if (processed.has(uniqueId)) continue;
         processed.add(uniqueId);
 
-        console.log("📩 Checking:", subject);
+        console.log("🔍 Checking:", subject);
 
-        // FILTER
+        // ❌ FILTER
         if (!isJob(subject)) {
           console.log("🚫 Skipped");
           continue;
@@ -115,27 +91,29 @@ async function checkEmails() {
 
         const text = subject + " " + body;
 
-        const sc = score(text);
+        // ✅ RESUME-AWARE SCORE
+        const score = matchScore(text);
+        const priority = getPriority(score);
 
-        if (sc < 40) {
-          console.log("⛔ Low score:", sc);
+        // ❌ IGNORE LOW QUALITY
+        if (priority === "❌ IGNORE") {
+          console.log("🚫 Ignored by AI");
           continue;
         }
 
-        const priority = getPriority(sc);
         const link = getLink(body);
 
-        const msg = `🚀 *JOB ALERT*
+        const msg = `🚀 *AI JOB ALERT*
 
 📌 ${subject}
 
-⭐ Score: ${sc}
-📊 ${priority}
+⭐ Score: ${score}
+${priority}
 
 🔗 ${link}`;
 
         console.log("📤 Sending WhatsApp...");
-        await send(msg);
+        await sendMessage(msg);
 
       } catch (err) {
         console.log("⚠️ Email parse error:", err.message);
