@@ -1,0 +1,77 @@
+{
+  "role": "AI Engineer",
+  "experience_years": 3,
+
+  "core_domains": [
+    "artificial intelligence",
+    "machine learning",
+    "deep learning",
+    "generative ai",
+    "llm",
+    "rag",
+    "ai systems"
+  ],
+
+  "skills": [
+    "python",
+    "fastapi",
+    "rest api",
+    "microservices",
+
+    "mlops",
+    "ci cd",
+    "github actions",
+
+    "docker",
+    "kubernetes",
+    "gcp",
+    "aws",
+
+    "rag",
+    "llm",
+    "langchain",
+    "faiss",
+    "prompt engineering",
+
+    "postgresql",
+    "pgvector",
+    "vector database",
+    "embeddings",
+
+    "monitoring",
+    "prometheus",
+    "grafana"
+  ],
+
+  "tools": [
+    "openai",
+    "ollama",
+    "mlflow",
+    "scikit learn"
+  ],
+
+  "priority_keywords": [
+    "ai engineer",
+    "machine learning engineer",
+    "ml engineer",
+    "data scientist",
+    "llm engineer",
+    "generative ai",
+    "rag",
+    "mlops",
+    "kubernetes",
+    "fastapi",
+    "langchain"
+  ],
+
+  "ignore_keywords": [
+    "internship",
+    "unpaid",
+    "course",
+    "bootcamp",
+    "marketing",
+    "sales",
+    "training",
+    "walk in"
+  ]
+}

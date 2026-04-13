@@ -1,4 +1,4 @@
-node_modules
-.wwebjs_auth
-data
+node_modules/
 .env
+.wwebjs_auth/
+database.sqlite
